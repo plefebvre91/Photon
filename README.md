@@ -6,5 +6,5 @@ Analyse les métadonnées EXIF de vos photos et trace les graphes statistiques d
 Publié sous licence GPL 3.0
 
 # Dépendances
-Qt 5.x ou supérieur
-Exif Tools
+- Qt 5.x ou supérieur
+- Bibliothèque Exif (libexif.sourceforge.net)
