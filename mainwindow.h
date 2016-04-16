@@ -16,6 +16,12 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
+public slots:
+    void analyze();
+    void save();
+    void addFilter();
+    void refresh();
+
 private:
     Ui::MainWindow *ui;
     QDirModel *model;
