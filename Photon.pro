@@ -19,4 +19,6 @@ SOURCES += main.cpp\
 HEADERS  += mainwindow.h \
     qcustomplot.h
 
+LIBS += -lexif
+
 FORMS    += mainwindow.ui

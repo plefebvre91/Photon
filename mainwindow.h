@@ -3,7 +3,10 @@
 
 #include <QMainWindow>
 #include <QDirModel>
-
+#include <qcustomplot.h>
+#include <QMap>
+#include <QString>
+#include <libexif/exif-data.h>
 namespace Ui {
 class MainWindow;
 }
@@ -25,6 +28,10 @@ public slots:
 private:
     Ui::MainWindow *ui;
     QDirModel *model;
+    QMap<QString, int> mapAperture;
+    void show_tag(ExifData *d, ExifIfd ifd, ExifTag tag);
+
+    void initPlot(QCustomPlot* plot);
 };
 
 #endif // MAINWINDOW_H
