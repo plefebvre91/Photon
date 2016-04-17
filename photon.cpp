@@ -3,7 +3,7 @@
 #include "libexif/exif-data.h"
 #include <iostream>
 #include <QtConcurrent/QtConcurrent>
-
+#include "photonworkerthread.h"
 #define PHOTON_MAX_TAG_SIZE 1024
 #define PHOTON_Y_AXIS_LABEL        "Times used"
 #define PHOTON_ISO_LABEL           "ISO speed"
@@ -26,22 +26,25 @@ Photon::Photon(QWidget *parent) : QMainWindow(parent),  ui(new Ui::MainWindow),
 {
     ui->setupUi(this);
 
+    p = new PhotonWorkerThread(this);
+
     /* Connect buttons signals/slots */
     QObject::connect(ui->pushButtonQuit,      SIGNAL(clicked()), this, SLOT(close()));
-    QObject::connect(ui->pushButtonAnalyze,   SIGNAL(clicked()), this, SLOT(analyze()));
+    QObject::connect(ui->pushButtonAnalyze,   SIGNAL(clicked()), this, SLOT(start_thread()));
     QObject::connect(ui->pushButtonSave,      SIGNAL(clicked()), this, SLOT(save()));
     QObject::connect(ui->pushButtonAddFilter, SIGNAL(clicked()), this, SLOT(addFilter()));
-    QObject::connect(ui->pushButtonRefresh,   SIGNAL(clicked()), this, SLOT(refresh()));
 
     /* Connect menu signal= QString::s/slots */
     QObject::connect(ui->actionQuit ,     SIGNAL(triggered()), this, SLOT(close()));
-    QObject::connect(ui->actionAnalyze,   SIGNAL(triggered()), this, SLOT(analyze()));
+    QObject::connect(ui->actionAnalyze,   SIGNAL(triggered()), this, SLOT(start_thread()));
     QObject::connect(ui->actionSave ,     SIGNAL(triggered()), this, SLOT(save()));
     QObject::connect(ui->actionAddFilter, SIGNAL(triggered()), this, SLOT(addFilter()));
-    QObject::connect(ui->actionRefresh ,  SIGNAL(triggered()), this, SLOT(refresh()));
 
     /* Create and populate our model */
+    QStringList l;
+    l << "/home/*";
     model = new QDirModel(this);
+   // model->setNameFilters(l);
     model->setSorting(QDir::DirsFirst | QDir::IgnoreCase | QDir::Name);
     model->setFilter(QDir::Dirs | QDir::NoDotAndDotDot);
     model->setReadOnly(true);
@@ -77,21 +80,12 @@ Photon::Photon(QWidget *parent) : QMainWindow(parent),  ui(new Ui::MainWindow),
     ui->plotFocalLength->plotLayout()->insertRow(0);
     ui->plotFocalLength->plotLayout()->addElement(0, 0, new QCPPlotTitle(ui->plotFocalLength, PHOTON_FOCAL_LENGTH_TITLE));
 
-//    ui->plotFocalLength->setMinimumHeight(ui->tabOverview->size().height()/2);
-//    ui->plotFocalLength->setMinimumWidth(ui->tabOverview->size().width()/2);
-
-//    layoutOverview.addWidget(ui->plotAperture,0,0);
-//    layoutOverview.addWidget(ui->plotShutterSpeed,1,0);
-//    layoutOverview.addWidget(ui->plotISO,0,1);
-//    layoutOverview.addWidget(ui->plotFocalLength,1,1);
-
-
-//    ui->tabOverview->setLayout(&layoutOverview);
-
     ui->plotAperture->setVisible(false);
     ui->plotISO->setVisible(false);
     ui->plotFocalLength->setVisible(false);
     ui->plotShutterSpeed->setVisible(false);
+
+    ui->tabWidget->setMinimumSize(2*(this->width())/3, 0);
 
     this->showMaximized();
 
@@ -128,6 +122,10 @@ void Photon::updateStatistics(ExifData *d, ExifIfd ifd, ExifTag tag, QMap<QStrin
     }
 }
 
+void Photon::start_thread(){
+    p->start();
+}
+
 void Photon::updatePlot(QCustomPlot* plot, QMap<QString, int>& map)
 {    
     QVector<QString> labels;
@@ -157,6 +155,8 @@ void Photon::updatePlot(QCustomPlot* plot, QMap<QString, int>& map)
     plot->xAxis->setAutoTickLabels(false);
     plot->xAxis->setTickVectorLabels(labels);
     plot->xAxis->setRange(1, (double)i+1.5);
+    plot->yAxis->setTickStep(1);
+    plot->yAxis->setSubTickLength(0);
     plot->yAxis->setRange(0, *(std::max_element(y.constBegin(),y.constEnd())));
 
     plot->replot();
@@ -195,7 +195,7 @@ void Photon::analyze()
         //show_tag(ed, EXIF_IFD_0, EXIF_TAG_MODEL);
         /* These are much less likely to be useful */
        // updateStatistics(ed, EXIF_IFD_EXIF, EXIF_TAG_FOCAL_LENGTH, mapFocalLength);
-        updateStatistics(ed, EXIF_IFD_EXIF, EXIF_TAG_FOCAL_LENGTH_IN_35MM_FILM, mapFocalLength);
+        updateStatistics(ed, EXIF_IFD_EXIF, EXIF_TAG_FOCAL_LENGTH, mapFocalLength);
         updateStatistics(ed, EXIF_IFD_EXIF, EXIF_TAG_ISO_SPEED_RATINGS, mapISO);
         updateStatistics(ed, EXIF_IFD_EXIF, EXIF_TAG_APERTURE_VALUE, mapAperture);
         updateStatistics(ed, EXIF_IFD_EXIF, EXIF_TAG_SHUTTER_SPEED_VALUE, mapShutterSpeed);
@@ -222,18 +222,31 @@ void Photon::analyze()
 
 void Photon::save()
 {
-    QMessageBox messageBox;
-    messageBox.information(0,"Info", "Save");
+
+    QDate date = QDate::currentDate();
+    QString path = QFileDialog::getExistingDirectory(this,"Choose a directory");
+
+    ui->plotISO->resize(1920,970);
+    ui->plotAperture->resize(1920,1080);
+    ui->plotFocalLength->resize(1920,1080);
+    ui->plotShutterSpeed->resize(1920,1080);
+
+    ui->plotAperture->savePdf(path+"/Aperture-"+date.toString()+".pdf");
+    ui->plotISO->savePdf(path+"/ISO-"+date.toString()+".pdf");
+    ui->plotFocalLength->savePdf(path+"/FocalLength-"+date.toString()+".pdf");
+    ui->plotShutterSpeed->savePdf(path+"/ShutterSpeed-"+date.toString()+".pdf");
+
+    ui->tabFocalLength->resize(ui->tabWidget->size());
+
+
+    this->statusBar()->showMessage("Plots have been saved", 10000);
+
+
+
 }
 
 void Photon::addFilter()
 {
     QMessageBox messageBox;
     messageBox.information(0,"Info", "Add a filter");
-}
-
-void Photon::refresh()
-{
-    QMessageBox messageBox;
-    messageBox.information(0,"Info", "Refresh");
 }
