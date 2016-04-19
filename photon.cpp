@@ -134,18 +134,19 @@ void Photon::updatePlot(QCustomPlot* plot, QMap<QString, int>& map)
     QVector<double> y;
     QVector<double> x;
     int i=1;
-    labels << " ";
+labels << "0";
     for(QMap<QString, int>::iterator it = map.begin(); it!=map.end(); ++it){
         if(plot == ui->plotAperture || plot == ui->plotShutterSpeed)
         {
             int begin = it.key().indexOf('(');
             int end = it.key().indexOf(')');
             QString l = it.key().mid(begin+1, end-begin-1);
-            labels.push_back(l);//rx.cap(1));//it.key());
+            labels.push_back(l);
 
         }
         else
             labels.push_back(it.key());
+
         y.push_back(it.value());
         x.push_back(++i);
     }
@@ -153,12 +154,15 @@ void Photon::updatePlot(QCustomPlot* plot, QMap<QString, int>& map)
     plot->clearGraphs();
     plot->clearPlottables();
     plot->clearItems();
+    plot->xAxis->setAutoTickStep(true);
+    plot->xAxis->setAutoTickCount(map.size());
     plot->xAxis->setAutoTickLabels(false);
     plot->xAxis->setTickVectorLabels(labels);
-    plot->xAxis->setTickLabelRotation(90);
+
+    plot->xAxis->setTickLabelRotation(-60);
+
     plot->xAxis->setRange(1, (double)i+1.5);
     plot->yAxis->setRange(0, *(std::max_element(y.constBegin(),y.constEnd())));
-    //plot->rescaleAxes(true);
 
     QCPBars* myBars = new QCPBars(plot->xAxis, plot->yAxis);
     plot->addPlottable(myBars);
