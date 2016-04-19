@@ -14,11 +14,14 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
     qcustomplot.cpp \
-    photon.cpp
+    photon.cpp \
+    photonworkerthread.cpp
 
 HEADERS  += \
     qcustomplot.h \
-    photon.h
+    photon.h \
+    photonworkerthread.h
+
 
 LIBS += -lexif
 

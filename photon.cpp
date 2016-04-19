@@ -144,7 +144,7 @@ void Photon::updatePlot(QCustomPlot* plot, QMap<QString, int>& map)
     QVector<double> y;
     QVector<double> x;
     int i=1;
-labels << "0";
+    labels << " ";
     for(QMap<QString, int>::iterator it = map.begin(); it!=map.end(); ++it){
         if(plot == ui->plotAperture || plot == ui->plotShutterSpeed)
         {
@@ -161,11 +161,10 @@ labels << "0";
         x.push_back(++i);
     }
 
-    plot->clearGraphs();
-    plot->clearPlottables();
-    plot->clearItems();
-    plot->xAxis->setAutoTickStep(true);
-    plot->xAxis->setAutoTickCount(map.size());
+    QCPBars* myBars = new QCPBars(plot->xAxis, plot->yAxis);
+    plot->addPlottable(myBars);
+    plot->addGraph();
+    myBars->setData(x, y);
     plot->xAxis->setAutoTickLabels(false);
     plot->xAxis->setTickVectorLabels(labels);
 
@@ -173,11 +172,6 @@ labels << "0";
 
     plot->xAxis->setRange(1, (double)i+1.5);
     plot->yAxis->setRange(0, *(std::max_element(y.constBegin(),y.constEnd())));
-
-    QCPBars* myBars = new QCPBars(plot->xAxis, plot->yAxis);
-    plot->addPlottable(myBars);
-    myBars->setData(x, y);
-
 
     plot->replot();
 
@@ -246,8 +240,27 @@ void Photon::analyze()
 
 void Photon::save()
 {
-    QMessageBox messageBox;
-    messageBox.information(0,"Info", "Save");
+
+    QDate date = QDate::currentDate();
+    QString path = QFileDialog::getExistingDirectory(this,"Choose a directory");
+
+    ui->plotISO->resize(1920,970);
+    ui->plotAperture->resize(1920,1080);
+    ui->plotFocalLength->resize(1920,1080);
+    ui->plotShutterSpeed->resize(1920,1080);
+
+    ui->plotAperture->savePdf(path+"/Aperture-"+date.toString()+".pdf");
+    ui->plotISO->savePdf(path+"/ISO-"+date.toString()+".pdf");
+    ui->plotFocalLength->savePdf(path+"/FocalLength-"+date.toString()+".pdf");
+    ui->plotShutterSpeed->savePdf(path+"/ShutterSpeed-"+date.toString()+".pdf");
+
+    ui->tabFocalLength->resize(ui->tabWidget->size());
+
+
+    this->statusBar()->showMessage("Plots have been saved", 10000);
+
+
+
 }
 
 void Photon::addFilter()
