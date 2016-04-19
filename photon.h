@@ -22,7 +22,6 @@
 #include <QMainWindow>
 #include <QDirModel>
 #include <qcustomplot.h>
-#include "photonworkerthread.h"
 #include <QMap>
 #include <QString>
 #include <libexif/exif-data.h>
@@ -40,10 +39,8 @@ public:
     explicit Photon(QWidget *parent = 0);
     ~Photon();
 
-
-    void analyze();
 public slots:
-    void start_thread(void);
+    void analyze(void);
     void save();
     void addFilter();
 

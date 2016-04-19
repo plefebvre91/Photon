@@ -38,7 +38,7 @@
 #define PHOTON_ISO_TITLE           PHOTON_STR_ISO " usage"
 #define PHOTON_FOCAL_LENGTH_TITLE  PHOTON_STR_FOCAL_LENGTH " usage"
 
-#define PHOTON_X_LABEL_ROTATION "-60"
+#define PHOTON_X_LABEL_ROTATION (-60)
 
 
 Photon::Photon(QWidget *parent) : QMainWindow(parent),  ui(new Ui::MainWindow),
@@ -52,14 +52,12 @@ Photon::Photon(QWidget *parent) : QMainWindow(parent),  ui(new Ui::MainWindow),
     QObject::connect(ui->pushButtonAnalyze,   SIGNAL(clicked()), this, SLOT(analyze()));
     QObject::connect(ui->pushButtonSave,      SIGNAL(clicked()), this, SLOT(save()));
     QObject::connect(ui->pushButtonAddFilter, SIGNAL(clicked()), this, SLOT(addFilter()));
-    QObject::connect(ui->pushButtonRefresh,   SIGNAL(clicked()), this, SLOT(refresh()));
 
     /* Connect menu signal= QString::s/slots */
     QObject::connect(ui->actionQuit ,     SIGNAL(triggered()), this, SLOT(close()));
     QObject::connect(ui->actionAnalyze,   SIGNAL(triggered()), this, SLOT(analyze()));
     QObject::connect(ui->actionSave ,     SIGNAL(triggered()), this, SLOT(save()));
     QObject::connect(ui->actionAddFilter, SIGNAL(triggered()), this, SLOT(addFilter()));
-    QObject::connect(ui->actionRefresh ,  SIGNAL(triggered()), this, SLOT(refresh()));
 
     /* Create and populate our model */
     model = new QDirModel(this);
@@ -161,17 +159,23 @@ void Photon::updatePlot(QCustomPlot* plot, QMap<QString, int>& map)
         x.push_back(++i);
     }
 
+    plot->clearPlottables();
+
     QCPBars* myBars = new QCPBars(plot->xAxis, plot->yAxis);
-    plot->addPlottable(myBars);
-    plot->addGraph();
-    myBars->setData(x, y);
+
     plot->xAxis->setAutoTickLabels(false);
+    plot->xAxis->setAutoTickStep(true);
+    plot->xAxis->setAutoTickCount(map.size());
     plot->xAxis->setTickVectorLabels(labels);
-
     plot->xAxis->setTickLabelRotation(PHOTON_X_LABEL_ROTATION);
-
     plot->xAxis->setRange(1, (double)i+1.5);
     plot->yAxis->setRange(0, *(std::max_element(y.constBegin(),y.constEnd())));
+
+    myBars->setData(x, y);
+    plot->addPlottable(myBars);
+
+
+
 
     plot->replot();
 
@@ -267,10 +271,4 @@ void Photon::addFilter()
 {
     QMessageBox messageBox;
     messageBox.information(0,"Info", "Add a filter");
-}
-
-void Photon::refresh()
-{
-    QMessageBox messageBox;
-    messageBox.information(0,"Info", "Refresh");
 }
