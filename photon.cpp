@@ -1,23 +1,44 @@
+/* Photon reads your pictures EXIF data and plot the the
+ * statistical information.
+
+ * Photon is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+
+ * Photon is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with Photon.  If not, see <http://www.gnu.org/licenses/>
+ */
+
 #include "photon.h"
 #include "ui_mainwindow.h"
 #include "libexif/exif-data.h"
 #include <iostream>
 #include <QtConcurrent/QtConcurrent>
 
+#define PHOTON_STR_APERTURE "Aperture"
+#define PHOTON_STR_ISO      "ISO"
+#define PHOTON_STR_SHUTTER_SPEED "Shutter speed"
+#define PHOTON_STR_FOCAL_LENGTH "Focal lens"
+
 #define PHOTON_MAX_TAG_SIZE 1024
 #define PHOTON_Y_AXIS_LABEL        "Times used"
-#define PHOTON_ISO_LABEL           "ISO speed"
-#define PHOTON_SHUTTER_SPEED_LABEL "Shutter speed (s)"
-#define PHOTON_APERTURE_LABEL      "Aperture (f)"
-#define PHOTON_FOCAL_LENGTH_LABEL  "Focal length (mm)"
+#define PHOTON_ISO_LABEL           PHOTON_STR_ISO " speed"
+#define PHOTON_SHUTTER_SPEED_LABEL PHOTON_STR_SHUTTER_SPEED " (s)"
+#define PHOTON_APERTURE_LABEL      PHOTON_STR_APERTURE " (f)"
+#define PHOTON_FOCAL_LENGTH_LABEL  PHOTON_STR_FOCAL_LENGTH " (mm)"
 
+#define PHOTON_APERTURE_TITLE      PHOTON_STR_APERTURE " usage"
+#define PHOTON_SHUTTER_SPEED_TITLE PHOTON_STR_SHUTTER_SPEED " usage"
+#define PHOTON_ISO_TITLE           PHOTON_STR_ISO " usage"
+#define PHOTON_FOCAL_LENGTH_TITLE  PHOTON_STR_FOCAL_LENGTH " usage"
 
-#define PHOTON_APERTURE_TITLE "Aperture usage"
-#define PHOTON_SHUTTER_SPEED_TITLE "Shutter speed usage"
-#define PHOTON_ISO_TITLE "ISO speed usage"
-#define PHOTON_FOCAL_LENGTH_TITLE "Focal length usage"
-
-
+#define PHOTON_X_LABEL_ROTATION "-60"
 
 
 Photon::Photon(QWidget *parent) : QMainWindow(parent),  ui(new Ui::MainWindow),
@@ -76,17 +97,6 @@ Photon::Photon(QWidget *parent) : QMainWindow(parent),  ui(new Ui::MainWindow),
 
     ui->plotFocalLength->plotLayout()->insertRow(0);
     ui->plotFocalLength->plotLayout()->addElement(0, 0, new QCPPlotTitle(ui->plotFocalLength, PHOTON_FOCAL_LENGTH_TITLE));
-
-//    ui->plotFocalLength->setMinimumHeight(ui->tabOverview->size().height()/2);
-//    ui->plotFocalLength->setMinimumWidth(ui->tabOverview->size().width()/2);
-
-//    layoutOverview.addWidget(ui->plotAperture,0,0);
-//    layoutOverview.addWidget(ui->plotShutterSpeed,1,0);
-//    layoutOverview.addWidget(ui->plotISO,0,1);
-//    layoutOverview.addWidget(ui->plotFocalLength,1,1);
-
-
-//    ui->tabOverview->setLayout(&layoutOverview);
 
     ui->plotAperture->setVisible(false);
     ui->plotISO->setVisible(false);
@@ -159,7 +169,7 @@ labels << "0";
     plot->xAxis->setAutoTickLabels(false);
     plot->xAxis->setTickVectorLabels(labels);
 
-    plot->xAxis->setTickLabelRotation(-60);
+    plot->xAxis->setTickLabelRotation(PHOTON_X_LABEL_ROTATION);
 
     plot->xAxis->setRange(1, (double)i+1.5);
     plot->yAxis->setRange(0, *(std::max_element(y.constBegin(),y.constEnd())));
