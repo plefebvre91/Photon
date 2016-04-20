@@ -72,7 +72,9 @@ Photon::Photon(QWidget *parent) : QMainWindow(parent),  ui(new Ui::MainWindow),
     //ui->treeView->selectionModel()->setCurrentIndex(QModelIndex(0),);
     QModelIndex first = model->index(0, 0, QModelIndex());
     ui->treeView->setCurrentIndex(first);
-
+    ui->treeView->hideColumn(1);
+    ui->treeView->hideColumn(2);
+    ui->treeView->hideColumn(3);
 
     ui->plotAperture->yAxis->setLabel(PHOTON_Y_AXIS_LABEL);
     ui->plotISO->yAxis->setLabel(PHOTON_Y_AXIS_LABEL);
@@ -100,6 +102,8 @@ Photon::Photon(QWidget *parent) : QMainWindow(parent),  ui(new Ui::MainWindow),
     ui->plotISO->setVisible(false);
     ui->plotFocalLength->setVisible(false);
     ui->plotShutterSpeed->setVisible(false);
+
+
 
     this->showMaximized();
 
