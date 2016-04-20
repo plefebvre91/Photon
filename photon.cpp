@@ -20,30 +20,34 @@
 #include "libexif/exif-data.h"
 #include <iostream>
 #include <QtConcurrent/QtConcurrent>
+#include "defs.h"
+static const char* xLabels[] =
+{
+    PHOTON_APERTURE_LABEL,
+    PHOTON_ISO_LABEL,
+    PHOTON_SHUTTER_SPEED_LABEL,
+    PHOTON_FOCAL_LENGTH_LABEL
+};
 
-#define PHOTON_STR_APERTURE "Aperture"
-#define PHOTON_STR_ISO      "ISO"
-#define PHOTON_STR_SHUTTER_SPEED "Shutter speed"
-#define PHOTON_STR_FOCAL_LENGTH "Focal lens"
+static const char* strPlots[] =
+{
+    PHOTON_STR_APERTURE,
+    PHOTON_STR_ISO,
+    PHOTON_STR_SHUTTER_SPEED,
+    PHOTON_STR_FOCAL_LENGTH
+};
 
-#define PHOTON_MAX_TAG_SIZE 1024
-#define PHOTON_Y_AXIS_LABEL        "Times used"
-#define PHOTON_ISO_LABEL           PHOTON_STR_ISO " speed"
-#define PHOTON_SHUTTER_SPEED_LABEL PHOTON_STR_SHUTTER_SPEED " (s)"
-#define PHOTON_APERTURE_LABEL      PHOTON_STR_APERTURE " (f)"
-#define PHOTON_FOCAL_LENGTH_LABEL  PHOTON_STR_FOCAL_LENGTH " (mm)"
-
-#define PHOTON_APERTURE_TITLE      PHOTON_STR_APERTURE " usage"
-#define PHOTON_SHUTTER_SPEED_TITLE PHOTON_STR_SHUTTER_SPEED " usage"
-#define PHOTON_ISO_TITLE           PHOTON_STR_ISO " usage"
-#define PHOTON_FOCAL_LENGTH_TITLE  PHOTON_STR_FOCAL_LENGTH " usage"
-
-#define PHOTON_X_LABEL_ROTATION (-60)
-
+static const char* plotTitles[] =
+{
+    PHOTON_APERTURE_TITLE,
+    PHOTON_ISO_TITLE,
+    PHOTON_SHUTTER_SPEED_TITLE,
+    PHOTON_FOCAL_LENGTH_TITLE
+};
 
 Photon::Photon(QWidget *parent) : QMainWindow(parent),  ui(new Ui::MainWindow),
-    mapAperture(), mapISO(), mapShutterSpeed(),
-    mapFocalLength(), layoutOverview()
+    //mapAperture(), mapISO(), mapShutterSpeed(),
+    /*mapFocalLength(), */layoutOverview(), plots(PHOTON_NB_PLOT), maps(PHOTON_NB_PLOT)
 {
     ui->setupUi(this);
 
@@ -68,45 +72,34 @@ Photon::Photon(QWidget *parent) : QMainWindow(parent),  ui(new Ui::MainWindow),
     /* Enable modifying file system */
     ui->treeView->setModel(model);
 
-    /* Select a default*/
-    //ui->treeView->selectionModel()->setCurrentIndex(QModelIndex(0),);
+    /* Select a default selected line */
     QModelIndex first = model->index(0, 0, QModelIndex());
     ui->treeView->setCurrentIndex(first);
-    ui->treeView->hideColumn(1);
-    ui->treeView->hideColumn(2);
-    ui->treeView->hideColumn(3);
 
-    ui->plotAperture->yAxis->setLabel(PHOTON_Y_AXIS_LABEL);
-    ui->plotISO->yAxis->setLabel(PHOTON_Y_AXIS_LABEL);
-    ui->plotShutterSpeed->yAxis->setLabel(PHOTON_Y_AXIS_LABEL);
-    ui->plotFocalLength->yAxis->setLabel(PHOTON_Y_AXIS_LABEL);
+    /* Hide useless columns */
+    for(int columnIndex=1; columnIndex<3; columnIndex++)
+    {
+        ui->treeView->hideColumn(columnIndex);
+    }
 
-    ui->plotAperture->xAxis->setLabel(PHOTON_APERTURE_LABEL);
-    ui->plotISO->xAxis->setLabel(PHOTON_ISO_LABEL);
-    ui->plotShutterSpeed->xAxis->setLabel(PHOTON_SHUTTER_SPEED_LABEL);
-    ui->plotFocalLength->xAxis->setLabel(PHOTON_FOCAL_LENGTH_LABEL);
+    plots[PHOTON_ID_APERTURE] = ui->plotAperture;
+    plots[PHOTON_ID_ISO] = ui->plotISO;
+    plots[PHOTON_ID_SHUTTER_SPEED] = ui->plotShutterSpeed;
+    plots[PHOTON_ID_FOCAL_LENGTH] = ui->plotFocalLength;
 
-    ui->plotAperture->plotLayout()->insertRow(0);
-    ui->plotAperture->plotLayout()->addElement(0, 0, new QCPPlotTitle(ui->plotAperture, PHOTON_APERTURE_TITLE));
-
-    ui->plotShutterSpeed->plotLayout()->insertRow(0);
-    ui->plotShutterSpeed->plotLayout()->addElement(0, 0, new QCPPlotTitle(ui->plotShutterSpeed, PHOTON_SHUTTER_SPEED_TITLE));
-
-    ui->plotISO->plotLayout()->insertRow(0);
-    ui->plotISO->plotLayout()->addElement(0, 0, new QCPPlotTitle(ui->plotISO, PHOTON_ISO_TITLE));
-
-    ui->plotFocalLength->plotLayout()->insertRow(0);
-    ui->plotFocalLength->plotLayout()->addElement(0, 0, new QCPPlotTitle(ui->plotFocalLength, PHOTON_FOCAL_LENGTH_TITLE));
-
-    ui->plotAperture->setVisible(false);
-    ui->plotISO->setVisible(false);
-    ui->plotFocalLength->setVisible(false);
-    ui->plotShutterSpeed->setVisible(false);
-
-
+    /* Set plot Y labels */
+    int i = 0;
+    for(auto p : plots)
+    {
+        p->yAxis->setLabel(PHOTON_Y_AXIS_LABEL);
+        p->setVisible(false);
+        p->xAxis->setLabel(xLabels[i]);
+        p->plotLayout()->insertRow(0);
+        p->plotLayout()->addElement(0, 0, new QCPPlotTitle(p, plotTitles[i]));
+        i++;
+    }
 
     this->showMaximized();
-
 }
 
 Photon::~Photon()
@@ -167,6 +160,7 @@ void Photon::updatePlot(QCustomPlot* plot, QMap<QString, int>& map)
 
     QCPBars* myBars = new QCPBars(plot->xAxis, plot->yAxis);
 
+    myBars->setWidthType(QCPBars::wtPlotCoords);
     plot->xAxis->setAutoTickLabels(false);
     plot->xAxis->setAutoTickStep(true);
     plot->xAxis->setAutoTickCount(map.size());
@@ -178,28 +172,24 @@ void Photon::updatePlot(QCustomPlot* plot, QMap<QString, int>& map)
     myBars->setData(x, y);
     plot->addPlottable(myBars);
 
-
-
-
     plot->replot();
 
-/*TODO: Libere le new */
-
+    /*TODO: Libere le new */
 }
 
 
 void Photon::analyze()
 {
 
-    mapAperture.clear();
-    mapISO.clear();
-    mapShutterSpeed.clear();
-    mapFocalLength.clear();
+    for(auto map : maps)
+    {
+        map.clear();
+    }
 
-    ui->plotAperture->setVisible(false);
-    ui->plotISO->setVisible(false);
-    ui->plotFocalLength->setVisible(false);
-    ui->plotShutterSpeed->setVisible(false);
+    for(auto p : plots)
+    {
+        p->setVisible(false);
+    }
 
     QModelIndex index = ui->treeView->selectionModel()->selectedIndexes()[0];
     QDirIterator it(model->filePath(index), QStringList() << "*.JPG", QDir::Files, QDirIterator::Subdirectories);
@@ -221,28 +211,28 @@ void Photon::analyze()
         //show_tag(ed, EXIF_IFD_0, EXIF_TAG_MODEL);
         /* These are much less likely to be useful */
        // updateStatistics(ed, EXIF_IFD_EXIF, EXIF_TAG_FOCAL_LENGTH, mapFocalLength);
-        updateStatistics(ed, EXIF_IFD_EXIF, EXIF_TAG_FOCAL_LENGTH_IN_35MM_FILM, mapFocalLength);
-        updateStatistics(ed, EXIF_IFD_EXIF, EXIF_TAG_ISO_SPEED_RATINGS, mapISO);
-        updateStatistics(ed, EXIF_IFD_EXIF, EXIF_TAG_APERTURE_VALUE, mapAperture);
-        updateStatistics(ed, EXIF_IFD_EXIF, EXIF_TAG_SHUTTER_SPEED_VALUE, mapShutterSpeed);
+        updateStatistics(ed, EXIF_IFD_EXIF, EXIF_TAG_FOCAL_LENGTH_IN_35MM_FILM, maps[PHOTON_ID_FOCAL_LENGTH]);
+        updateStatistics(ed, EXIF_IFD_EXIF, EXIF_TAG_ISO_SPEED_RATINGS, maps[PHOTON_ID_ISO]);
+        updateStatistics(ed, EXIF_IFD_EXIF, EXIF_TAG_APERTURE_VALUE, maps[PHOTON_ID_APERTURE]);
+        updateStatistics(ed, EXIF_IFD_EXIF, EXIF_TAG_SHUTTER_SPEED_VALUE, maps[PHOTON_ID_SHUTTER_SPEED]);
 
         /* Free the EXIF data */
         exif_data_unref(ed);
         nbPics++;
     }
 
-    updatePlot(ui->plotAperture, mapAperture);
-    updatePlot(ui->plotFocalLength, mapFocalLength);
-    updatePlot(ui->plotShutterSpeed, mapShutterSpeed);
-    updatePlot(ui->plotISO, mapISO);
+    /* Update plots and make them visible */
+    for(auto plot : plots)
+    {
+        plot->setVisible(true);
+    }
 
+    for(int i=0; i<PHOTON_NB_PLOT; i++)
+    {
+        updatePlot(plots[i], maps[i]);
+
+    }
     this->statusBar()->showMessage(QString::number(nbPics) + " pictures have been analyzed", 10000);
-
-    ui->plotAperture->setVisible(true);
-    ui->plotISO->setVisible(true);
-    ui->plotFocalLength->setVisible(true);
-    ui->plotShutterSpeed->setVisible(true);
-
 }
 
 
@@ -252,23 +242,16 @@ void Photon::save()
     QDate date = QDate::currentDate();
     QString path = QFileDialog::getExistingDirectory(this,"Choose a directory");
 
-    ui->plotISO->resize(1920,970);
-    ui->plotAperture->resize(1920,1080);
-    ui->plotFocalLength->resize(1920,1080);
-    ui->plotShutterSpeed->resize(1920,1080);
-
-    ui->plotAperture->savePdf(path+"/Aperture-"+date.toString()+".pdf");
-    ui->plotISO->savePdf(path+"/ISO-"+date.toString()+".pdf");
-    ui->plotFocalLength->savePdf(path+"/FocalLength-"+date.toString()+".pdf");
-    ui->plotShutterSpeed->savePdf(path+"/ShutterSpeed-"+date.toString()+".pdf");
+    int i=0;
+    for(auto p : plots)
+    {
+        p->resize(PHOTON_PLOT_DIMENSION_X, PHOTON_PLOT_DIMENSION_Y);
+        p->savePdf(path+"/"+strPlots[i++]+"-"+date.toString()+".pdf");
+    }
 
     ui->tabFocalLength->resize(ui->tabWidget->size());
 
-
     this->statusBar()->showMessage("Plots have been saved", 10000);
-
-
-
 }
 
 void Photon::addFilter()

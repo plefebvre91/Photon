@@ -47,16 +47,16 @@ public slots:
 private:
     Ui::MainWindow *ui;
     QDirModel *model;
-    QMap<QString, int> mapAperture;
-    QMap<QString, int> mapISO;
-    QMap<QString, int> mapShutterSpeed;
-    QMap<QString, int> mapFocalLength;
+    std::vector<QMap<QString, int>> maps;
+//    QMap<QString, int> mapAperture;
+//    QMap<QString, int> mapISO;
+//    QMap<QString, int> mapShutterSpeed;
+//    QMap<QString, int> mapFocalLength;
     QGridLayout layoutOverview;
 int nbPics;
     void updateStatistics(ExifData *d, ExifIfd ifd, ExifTag tag, QMap<QString, int>& map);
     void updatePlot(QCustomPlot* plot, QMap<QString, int>& map);
-
-    PhotonWorkerThread *p;
+    std::vector<QCustomPlot*> plots;
 };
 
 #endif // PHOTON_H

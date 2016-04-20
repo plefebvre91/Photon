@@ -11,14 +11,18 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets printsupport
 TARGET = Photon
 TEMPLATE = app
 
+QMAKE_CXXFLAGS += -std=c++11
 
 SOURCES += main.cpp\
     qcustomplot.cpp \
-    photon.cpp
+    photon.cpp \
+    photonplot.cpp
 
 HEADERS  += \
     qcustomplot.h \
-    photon.h
+    photon.h \
+    photonplot.h \
+    defs.h
 
 
 LIBS += -lexif
